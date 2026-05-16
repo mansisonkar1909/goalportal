@@ -1,0 +1,79 @@
+/* GoalQuest Portal — light / dark theme tokens */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+  --gp-bg: #f8fafc;
+  --gp-surface: #ffffff;
+  --gp-surface-alt: #fafafa;
+  --gp-muted: #f1f5f9;
+  --gp-muted-2: #f8fafc;
+  --gp-border: #e2e8f0;
+  --gp-border-light: #f1f5f9;
+  --gp-text: #1e293b;
+  --gp-text-secondary: #64748b;
+  --gp-text-tertiary: #475569;
+  --gp-text-muted: #94a3b8;
+  --gp-placeholder: #cbd5e1;
+  --gp-input-bg: #ffffff;
+  --gp-input-border: #d1d5db;
+  --gp-accent-bg: #f0f4ff;
+  --gp-accent-soft: #ede9fe;
+  --gp-progress-track: #e5e7eb;
+  --gp-weight-track: #f1f5f9;
+  --gp-danger-bg: #fee2e2;
+  --gp-success-bg: #f0fdf4;
+  --gp-success-bg-alt: #f0fdf4;
+  --gp-warning-bg: #fffbeb;
+  --gp-warning-border: #fbbf24;
+  --gp-danger-surface: #fef2f2;
+  --gp-info-bg: #f0f4ff;
+  --gp-comment-bg: #f0f4ff;
+  --gp-comment-text: #4338ca;
+  --gp-edit-bg: #f0f4ff;
+  --gp-status-ontrack: #dcfce7;
+  --gp-unlock-bg: #fef3c7;
+  --gp-unlock-text: #b45309;
+  --gp-select-bg: #334155;
+  --gp-select-border: #475569;
+  --gp-toggle-bg: #334155;
+  --gp-toggle-hover: #475569;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --gp-bg: #0f172a;
+  --gp-surface: #1e293b;
+  --gp-surface-alt: #273549;
+  --gp-muted: #334155;
+  --gp-muted-2: #1e293b;
+  --gp-border: #334155;
+  --gp-border-light: #334155;
+  --gp-text: #f1f5f9;
+  --gp-text-secondary: #94a3b8;
+  --gp-text-tertiary: #cbd5e1;
+  --gp-text-muted: #64748b;
+  --gp-placeholder: #475569;
+  --gp-input-bg: #0f172a;
+  --gp-input-border: #475569;
+  --gp-accent-bg: #312e81;
+  --gp-accent-soft: #3730a3;
+  --gp-progress-track: #475569;
+  --gp-weight-track: #334155;
+  --gp-danger-bg: #450a0a;
+  --gp-success-bg: #052e16;
+  --gp-success-bg-alt: #14532d;
+  --gp-warning-bg: #422006;
+  --gp-warning-border: #d97706;
+  --gp-danger-surface: #450a0a;
+  --gp-info-bg: #312e81;
+  --gp-comment-bg: #312e81;
+  --gp-comment-text: #c4b5fd;
+  --gp-edit-bg: #312e81;
+  --gp-status-ontrack: #14532d;
+  --gp-unlock-bg: #422006;
+  --gp-unlock-text: #fbbf24;
+  --gp-select-bg: #0f172a;
+  --gp-select-border: #475569;
+  --gp-toggle-bg: #334155;
+  --gp-toggle-hover: #475569;
+}
