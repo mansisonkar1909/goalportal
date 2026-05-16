@@ -14,6 +14,14 @@ const DUMMY_USERS = [
 
 const roleColor = { Employee:"#6366f1", Manager:"#0ea5e9", Admin:"#16a34a" };
 
+const fieldLabelStyle = { display:"block", fontSize:12, fontWeight:600, color:"#6366f1", marginBottom:6 };
+const fieldInputStyle = (hasError) => ({
+  width:"100%", padding:"10px 14px", borderRadius:9, boxSizing:"border-box",
+  fontSize:14, color:"#1e293b", outline:"none",
+  background: hasError ? "#fef2f2" : "#eef2ff",
+  border: hasError ? "1.5px solid #dc2626" : "1.5px solid #c7d2fe",
+});
+
 export default function LoginPage({ onLogin }) {
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
@@ -116,29 +124,17 @@ export default function LoginPage({ onLogin }) {
 
           <form onSubmit={handleDummyLogin}>
             <div style={{ marginBottom:14 }}>
-              <label style={{ display:"block", fontSize:12, fontWeight:600, color:"#374151", marginBottom:6 }}>
-                Email address
-              </label>
+              <label style={fieldLabelStyle}>Email address</label>
               <input type="email" value={email} onChange={e=>{setEmail(e.target.value);setError("");}}
                 placeholder="e.g. aarav@corp.in"
-                style={{
-                  width:"100%", padding:"10px 14px", borderRadius:9,
-                  border: error ? "1.5px solid #dc2626" : "1px solid #d1d5db",
-                  fontSize:14, color:"#1e293b", outline:"none", boxSizing:"border-box"
-                }}
+                style={fieldInputStyle(!!error)}
               />
             </div>
             <div style={{ marginBottom:20 }}>
-              <label style={{ display:"block", fontSize:12, fontWeight:600, color:"#374151", marginBottom:6 }}>
-                Password
-              </label>
+              <label style={fieldLabelStyle}>Password</label>
               <input type="password" value={password} onChange={e=>{setPassword(e.target.value);setError("");}}
                 placeholder="e.g. Aarav@123"
-                style={{
-                  width:"100%", padding:"10px 14px", borderRadius:9,
-                  border: error ? "1.5px solid #dc2626" : "1px solid #d1d5db",
-                  fontSize:14, color:"#1e293b", outline:"none", boxSizing:"border-box"
-                }}
+                style={fieldInputStyle(!!error)}
               />
             </div>
 
