@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { fetchMyGoals, fetchTeamGoals, fetchAllGoals, fetchAllUsers, createGoal, approveGoal, rejectGoal, logAchievement, saveCheckin, deleteGoal } from "./api";
 import { ThemeToggle } from "./ThemeContext.jsx";
 import LoginPage from "./LoginPage";
+import ChatBot from "./ChatBot";
 
 // ─── DATA SEED ───────────────────────────────────────────────────────────────
 const THRUST_AREAS = ["Revenue Growth","Cost Optimization","Customer Experience","People Development","Operational Excellence","Innovation & Technology","Compliance & Governance","Sustainability"];
@@ -76,39 +78,81 @@ function progressBar(pct) {
 
 // ─── MAIN APP ────────────────────────────────────────────────────────────────
 export default function App() {
-  const [users] = useState(SEED_EMPLOYEES);
-  const [goals, setGoals] = useState(SEED_GOALS);
+  const [users, setUsers] = useState([]);
+  const [goals, setGoals] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [auditLog, setAuditLog] = useState(SEED_AUDIT);
-  const [currentUser, setCurrentUser] = useState(SEED_EMPLOYEES[0]);
+  const [currentUser, setCurrentUser] = useState(null);
   const [loggedInUser, setLoggedInUser] = useState(null);
   const [view, setView] = useState("dashboard");
   const [notification, setNotification] = useState(null);
 
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const role = currentUser.role;
+        const [goalsData, usersData] = await Promise.all([
+          role === "admin" ? fetchAllGoals() :
+          role === "manager" ? fetchTeamGoals() :
+          fetchMyGoals(),
+          fetchAllUsers()
+        ]);
+        setGoals(Array.isArray(goalsData) ? goalsData : []);
+        setUsers(Array.isArray(usersData) ? usersData : []);
+      } catch (err) {
+        console.error("Load error:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    if (currentUser) loadData();
+  }, [currentUser]);
+
   function handleLogin(authUser) {
-    const match = SEED_EMPLOYEES.find(u => u.email === authUser.email);
-    setCurrentUser(match ?? SEED_EMPLOYEES[0]);
+    localStorage.setItem("goalquest_token", authUser.token);
+    setCurrentUser(authUser);
     setLoggedInUser(authUser);
     setView("dashboard");
   }
 
   function handleLogout() {
+    localStorage.removeItem("goalquest_token");
+    localStorage.removeItem("goalquest_user");
     setLoggedInUser(null);
+    setCurrentUser(null);
   }
 
   if (!loggedInUser) return <LoginPage onLogin={handleLogin} />;
 
+  if (loading) return (
+    <div style={{
+      minHeight:"100vh", display:"flex", alignItems:"center",
+      justifyContent:"center", fontFamily:"sans-serif", background:"#f8fafc"
+    }}>
+      <div style={{ textAlign:"center" }}>
+        <div style={{ fontSize:40 }}>🎯</div>
+        <div style={{ fontSize:16, fontWeight:600, color:"#6366f1", marginTop:12 }}>
+          Loading GoalQuest...
+        </div>
+      </div>
+    </div>
+  );
   function notify(msg, type="success") {
     setNotification({ msg, type });
     setTimeout(() => setNotification(null), 3000);
   }
 
   function addAudit(goalId, action, by, detail) {
-    setAuditLog(prev => [...prev, { id:"au"+Date.now(), goalId, action, by, at: new Date().toISOString(), detail }]);
+    setAuditLog(prev => [...prev, {
+      id: "au"+Date.now(), goalId, action, by,
+      at: new Date().toISOString(), detail
+    }]);
   }
 
-  const myGoals = goals.filter(g => g.employeeId === currentUser.id);
-  const teamGoals = goals.filter(g => users.find(u => u.id === g.employeeId && u.managerId === currentUser.id));
+  const myGoals = goals.filter(g => g.employeeId === currentUser._id);
+  const teamGoals = goals.filter(g => users.find(u => u._id === g.employeeId && u.managerId === currentUser._id));
   const allGoals = goals;
+  const role = currentUser.role;
 
   const navItems = {
     employee: [
@@ -131,10 +175,9 @@ export default function App() {
     ],
   };
 
-  const role = currentUser.role;
-
   return (
-    <div style={{ fontFamily:"'Segoe UI',system-ui,sans-serif", minHeight:"100vh", background:"var(--gp-bg)", display:"flex", flexDirection:"column", transition:"background .25s ease, color .25s ease" }}>
+    <div style={{ fontFamily:"'Segoe UI',system-ui,sans-serif", minHeight:"100vh", background:"#f8fafc", display:"flex", flexDirection:"column" }}>
+
       {/* TOP BAR */}
       <header style={{ background:"#1e293b", color:"#fff", padding:"0 24px", height:56, display:"flex", alignItems:"center", justifyContent:"space-between", boxShadow:"0 1px 3px #0003", position:"sticky", top:0, zIndex:100 }}>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
@@ -142,11 +185,6 @@ export default function App() {
           <span style={{ fontWeight:700, fontSize:16, letterSpacing:-.3 }}>GoalQuest Portal</span>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:16 }}>
-          <ThemeToggle />
-          <select value={currentUser.id} onChange={e => setCurrentUser(users.find(u=>u.id===e.target.value))}
-            style={{ background:"#334155", color:"#fff", border:"1px solid #475569", borderRadius:6, padding:"4px 8px", fontSize:13 }}>
-            {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.role})</option>)}
-          </select>
           <button onClick={handleLogout} style={{
             background:"#ef4444", color:"#fff", border:"none", borderRadius:6,
             padding:"6px 14px", fontSize:13, fontWeight:600, cursor:"pointer"
@@ -155,11 +193,12 @@ export default function App() {
           </button>
           <div style={{ width:32, height:32, borderRadius:"50%", background:"#6366f1",
             display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:700 }}>
-            {currentUser.name.split(" ").map(n=>n[0]).join("").slice(0,2)}
+            {currentUser.name?.split(" ").map(n=>n[0]).join("").slice(0,2)}
           </div>
         </div>
       </header>
 
+      {/* NOTIFICATION */}
       {notification && (
         <div style={{ position:"fixed", top:64, right:24, zIndex:200, background: notification.type==="success"?"#16a34a":"#dc2626", color:"#fff", padding:"10px 20px", borderRadius:8, boxShadow:"0 4px 12px #0003", fontSize:14, fontWeight:500 }}>
           {notification.msg}
@@ -168,13 +207,13 @@ export default function App() {
 
       <div style={{ display:"flex", flex:1 }}>
         {/* SIDEBAR */}
-        <nav style={{ width:200, background:"var(--gp-surface)", borderRight:"1px solid var(--gp-border)", padding:"16px 8px", display:"flex", flexDirection:"column", gap:4, flexShrink:0 }}>
-          <div style={{ fontSize:11, fontWeight:600, color:"var(--gp-text-muted)", textTransform:"uppercase", letterSpacing:1, padding:"8px 10px 4px" }}>
+        <nav style={{ width:200, background:"#fff", borderRight:"1px solid #e2e8f0", padding:"16px 8px", display:"flex", flexDirection:"column", gap:4, flexShrink:0 }}>
+          <div style={{ fontSize:11, fontWeight:600, color:"#94a3b8", textTransform:"uppercase", letterSpacing:1, padding:"8px 10px 4px" }}>
             {role.toUpperCase()}
           </div>
           {(navItems[role]||[]).map(item => (
             <button key={item.id} onClick={() => setView(item.id)}
-              style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", borderRadius:8, border:"none", background: view===item.id ? "var(--gp-muted)" : "transparent", color: view===item.id ? "#6366f1" : "var(--gp-text-tertiary)", fontWeight: view===item.id ? 600 : 400, fontSize:14, cursor:"pointer", textAlign:"left" }}>
+              style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", borderRadius:8, border:"none", background: view===item.id ? "#f1f5f9" : "transparent", color: view===item.id ? "#6366f1" : "#475569", fontWeight: view===item.id ? 600 : 400, fontSize:14, cursor:"pointer", textAlign:"left" }}>
               <span>{item.icon}</span>{item.label}
             </button>
           ))}
@@ -182,18 +221,22 @@ export default function App() {
 
         {/* MAIN CONTENT */}
         <main style={{ flex:1, padding:24, overflowY:"auto", maxHeight:"calc(100vh - 56px)" }}>
-          {view === "dashboard" && <Dashboard currentUser={currentUser} users={users} goals={goals} myGoals={myGoals} teamGoals={teamGoals} />}
-          {view === "my-goals" && <MyGoals currentUser={currentUser} goals={goals} setGoals={setGoals} addAudit={addAudit} notify={notify} />}
+          {view === "dashboard"    && <Dashboard currentUser={currentUser} users={users} goals={goals} myGoals={myGoals} teamGoals={teamGoals} />}
+          {view === "my-goals"     && <MyGoals currentUser={currentUser} goals={goals} setGoals={setGoals} addAudit={addAudit} notify={notify} />}
           {view === "achievements" && <Achievements currentUser={currentUser} myGoals={myGoals} setGoals={setGoals} notify={notify} />}
-          {view === "team-goals" && <TeamGoals currentUser={currentUser} users={users} teamGoals={teamGoals} goals={goals} setGoals={setGoals} addAudit={addAudit} notify={notify} />}
-          {view === "approvals" && <Approvals currentUser={currentUser} users={users} teamGoals={teamGoals} goals={goals} setGoals={setGoals} addAudit={addAudit} notify={notify} />}
-          {view === "checkins" && <CheckIns currentUser={currentUser} users={users} teamGoals={teamGoals} goals={goals} setGoals={setGoals} addAudit={addAudit} notify={notify} />}
-          {view === "all-goals" && <AllGoals users={users} goals={allGoals} setGoals={setGoals} addAudit={addAudit} notify={notify} />}
-          {view === "reports" && <Reports users={users} goals={allGoals} />}
-          {view === "audit" && <AuditTrail auditLog={auditLog} goals={allGoals} users={users} />}
+          {view === "team-goals"   && <TeamGoals currentUser={currentUser} users={users} teamGoals={teamGoals} goals={goals} setGoals={setGoals} addAudit={addAudit} notify={notify} />}
+          {view === "approvals"    && <Approvals currentUser={currentUser} users={users} teamGoals={teamGoals} goals={goals} setGoals={setGoals} addAudit={addAudit} notify={notify} />}
+          {view === "checkins"     && <CheckIns currentUser={currentUser} users={users} teamGoals={teamGoals} goals={goals} setGoals={setGoals} addAudit={addAudit} notify={notify} />}
+          {view === "all-goals"    && <AllGoals users={users} goals={allGoals} setGoals={setGoals} addAudit={addAudit} notify={notify} />}
+          {view === "reports"      && <Reports users={users} goals={allGoals} />}
+          {view === "audit"        && <AuditTrail auditLog={auditLog} goals={allGoals} users={users} />}
           {view === "shared-goals" && <SharedGoals users={users} goals={goals} setGoals={setGoals} addAudit={addAudit} notify={notify} />}
         </main>
       </div>
+
+      {/* AI CHATBOT — floating button */}
+      <ChatBot />
+
     </div>
   );
 }

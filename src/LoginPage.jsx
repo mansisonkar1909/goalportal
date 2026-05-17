@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "./firebase";
+import { loginAPI } from "./api";
 
 const DUMMY_USERS = [
   { name:"Aarav Sharma",  email:"aarav@corp.in",  role:"Employee", dept:"Sales",       password:"Aarav@123",  avatar:"AS" },
@@ -28,16 +29,19 @@ export default function LoginPage({ onLogin }) {
   const [error, setError]       = useState("");
   const [copied, setCopied]     = useState(null);
 
-  function handleDummyLogin(e) {
+  async function handleDummyLogin(e) {
     e.preventDefault();
-    const user = DUMMY_USERS.find(
-      u => u.email === email.trim() && u.password === password
-    );
-    if (user) {
-      onLogin({ name: user.name, email: user.email,
-                role: user.role.toLowerCase(), avatar: user.avatar });
-    } else {
-      setError("Incorrect email or password. Use the credentials below.");
+    try {
+      const data = await loginAPI(email, password);
+      if (data.token) {
+        localStorage.setItem("goalquest_token", data.token);
+        localStorage.setItem("goalquest_user", JSON.stringify(data));
+        onLogin(data);
+      } else {
+        setError(data.message || "Invalid email or password");
+      }
+    } catch (err) {
+      setError("Server error. Make sure backend is running.");
     }
   }
 
