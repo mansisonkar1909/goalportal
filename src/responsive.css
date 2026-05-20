@@ -1,0 +1,104 @@
+/* ── RESET ── */
+* { box-sizing: border-box; }
+
+/* ── HAMBURGER — hidden on desktop ── */
+.hamburger-btn { display: none !important; }
+
+/* ── SIDEBAR DRAWER — hidden on mobile by default ── */
+@media (max-width: 768px) {
+
+  /* show hamburger */
+  .hamburger-btn { display: flex !important; }
+
+  /* sidebar becomes a slide-in drawer */
+  .app-sidebar {
+    position: fixed !important;
+    top: 56px !important;
+    left: -220px !important;
+    width: 200px !important;
+    height: calc(100vh - 56px) !important;
+    z-index: 150 !important;
+    box-shadow: 4px 0 20px #0002 !important;
+    transition: left 0.25s ease !important;
+    overflow-y: auto !important;
+  }
+
+  .app-sidebar.sidebar-open {
+    left: 0 !important;
+  }
+
+  /* main gets full width */
+  .app-main {
+    padding: 14px !important;
+    max-height: none !important;
+    padding-bottom: 30px !important;
+  }
+
+  /* stats — 2 columns */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  /* tables — horizontal scroll */
+  .table-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* forms — single column */
+  .form-grid,
+  .shared-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* override gridColumn span inside single column */
+  .form-grid > *,
+  .shared-form-grid > * {
+    grid-column: 1 !important;
+  }
+
+  /* goal cards — stack */
+  .goal-card {
+    flex-direction: column !important;
+  }
+  .goal-card-right {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+  }
+
+  /* check-in grid — stack */
+  .checkin-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* achievement quarters — 2 per row */
+  .quarters-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* completion grid — 1 col */
+  .completion-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* chatbot window */
+  .chatbot-window {
+    width: calc(100vw - 32px) !important;
+    right: 16px !important;
+    left: 16px !important;
+  }
+
+  h2 { font-size: 17px !important; }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .app-main {
+    padding: 10px !important;
+  }
+}
