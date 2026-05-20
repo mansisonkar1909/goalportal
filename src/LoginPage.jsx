@@ -63,9 +63,10 @@ export default function LoginPage({ onLogin }) {
     e.preventDefault();
     if (!name.trim()) return setError("Full name is required.");
     if (password.length < 6) return setError("Password must be at least 6 characters.");
+    console.log(role);
     setLoading(true);
     try {
-      const data = await registerAPI({ name, email, password, role, dept });
+      const data = await registerAPI({ name, email, password,  role: role.toLowerCase(), dept });
       if (data.token) {
         localStorage.setItem("goalquest_token", data.token);
         localStorage.setItem("goalquest_user", JSON.stringify(data));
