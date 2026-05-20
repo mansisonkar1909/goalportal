@@ -1,104 +1,360 @@
+/* ============================================================
+   responsive.css — GoalQuest Portal
+   Complete responsive stylesheet with all fixes applied
+   ============================================================ */
+
 /* ── RESET ── */
-* { box-sizing: border-box; }
-
-/* ── HAMBURGER — hidden on desktop ── */
-.hamburger-btn { display: none !important; }
-
-/* ── SIDEBAR DRAWER — hidden on mobile by default ── */
-@media (max-width: 768px) {
-
-  /* show hamburger */
-  .hamburger-btn { display: flex !important; }
-
-  /* sidebar becomes a slide-in drawer */
-  .app-sidebar {
-    position: fixed !important;
-    top: 56px !important;
-    left: -220px !important;
-    width: 200px !important;
-    height: calc(100vh - 56px) !important;
-    z-index: 150 !important;
-    box-shadow: 4px 0 20px #0002 !important;
-    transition: left 0.25s ease !important;
-    overflow-y: auto !important;
+* {
+    box-sizing: border-box;
   }
-
-  .app-sidebar.sidebar-open {
-    left: 0 !important;
+  
+  /* ── GLOBAL: Responsive images & media ── */
+  img,
+  video,
+  iframe,
+  embed,
+  object {
+    max-width: 100%;
+    height: auto;
   }
-
-  /* main gets full width */
-  .app-main {
-    padding: 14px !important;
-    max-height: none !important;
-    padding-bottom: 30px !important;
+  
+  /* ── HAMBURGER — hidden on desktop ── */
+  .hamburger-btn {
+    display: none !important;
   }
-
-  /* stats — 2 columns */
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 10px !important;
+  
+  /* ── SIDEBAR OVERLAY — hidden by default ── */
+  #sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 140;
+    backdrop-filter: blur(1px);
+    -webkit-backdrop-filter: blur(1px);
+    transition: opacity 0.25s ease;
   }
-
-  /* tables — horizontal scroll */
-  .table-wrapper {
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
+  
+  #sidebar-overlay.overlay-visible {
+    display: block;
   }
-
-  /* forms — single column */
-  .form-grid,
-  .shared-form-grid {
-    grid-template-columns: 1fr !important;
+  
+  /* ============================================================
+     TABLET BREAKPOINT (769px – 1024px)
+     ============================================================ */
+  @media (max-width: 1024px) and (min-width: 769px) {
+    /* Stats — 3 columns on tablet */
+    .stats-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+  
+    /* Sidebar slightly narrower */
+    .app-sidebar {
+      width: 180px !important;
+    }
+  
+    /* Give main a bit less padding */
+    .app-main {
+      padding: 18px !important;
+    }
+  
+    /* Achievement quarters — 3 per row on tablet */
+    .quarters-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  
+    /* Chatbot window — narrower on tablet */
+    .chatbot-window {
+      width: 340px !important;
+    }
   }
-
-  /* override gridColumn span inside single column */
-  .form-grid > *,
-  .shared-form-grid > * {
-    grid-column: 1 !important;
+  
+  /* ============================================================
+     MOBILE BREAKPOINT (max-width: 768px)
+     ============================================================ */
+  @media (max-width: 768px) {
+  
+    /* ── Hamburger: show on mobile ── */
+    .hamburger-btn {
+      display: flex !important;
+      min-height: 44px;
+      min-width: 44px;
+      align-items: center;
+      justify-content: center;
+    }
+  
+    /* ── Sidebar: slide-in drawer ── */
+    .app-sidebar {
+      position: fixed !important;
+      top: 56px !important;
+      left: -220px !important;
+      width: 200px !important;
+      height: calc(100vh - 56px) !important;
+      z-index: 150 !important;
+      box-shadow: 4px 0 20px rgba(0, 0, 0, 0.12) !important;
+      transition: left 0.25s ease !important;
+      overflow-y: auto !important;
+    }
+  
+    .app-sidebar.sidebar-open {
+      left: 0 !important;
+    }
+  
+    /* ── Touch targets: min 44×44px (Apple/Google guideline) ── */
+    button,
+    .nav-link,
+    .sidebar-item,
+    .menu-item,
+    [role="button"],
+    a.btn,
+    input[type="submit"],
+    input[type="button"],
+    input[type="reset"],
+    select {
+      min-height: 44px;
+      padding-top: 10px;
+      padding-bottom: 10px;
+    }
+  
+    /* ── Main content: full width ── */
+    .app-main {
+      padding: 14px !important;
+      max-height: none !important;
+      padding-bottom: 30px !important;
+    }
+  
+    /* ── Stats grid: 2 columns ── */
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 10px !important;
+    }
+  
+    /* ── Tables: horizontal scroll ── */
+    .table-wrapper {
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+    }
+  
+    /* ── Forms: single column ── */
+    .form-grid,
+    .shared-form-grid {
+      grid-template-columns: 1fr !important;
+    }
+  
+    /* Override grid-column spans inside single column */
+    .form-grid > *,
+    .shared-form-grid > * {
+      grid-column: 1 !important;
+    }
+  
+    /* ── Goal cards: stack vertically ── */
+    .goal-card {
+      flex-direction: column !important;
+    }
+  
+    .goal-card-right {
+      flex-direction: row !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      width: 100% !important;
+    }
+  
+    /* ── Check-in grid: single column ── */
+    .checkin-grid {
+      grid-template-columns: 1fr !important;
+    }
+  
+    /* ── Achievement quarters: 2 per row ── */
+    .quarters-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+  
+    /* ── Completion grid: single column ── */
+    .completion-grid {
+      grid-template-columns: 1fr !important;
+    }
+  
+    /* ── Chatbot window: full-width minus margin ── */
+    .chatbot-window {
+      width: calc(100vw - 32px) !important;
+      right: 16px !important;
+      left: 16px !important;
+      max-height: 70vh !important;
+      overflow-y: auto !important;
+    }
+  
+    /* ── Typography: scale down headings ── */
+    h1 {
+      font-size: clamp(1.3rem, 5vw, 2rem) !important;
+    }
+  
+    h2 {
+      font-size: 17px !important;
+    }
+  
+    h3 {
+      font-size: 15px !important;
+    }
+  
+    h4,
+    h5,
+    h6 {
+      font-size: 14px !important;
+    }
+  
+    /* ── Body text: slightly smaller on mobile ── */
+    body,
+    p,
+    li,
+    td,
+    th,
+    label,
+    span {
+      font-size: 14px;
+    }
+  
+    /* ── Modals & dialogs: full width ── */
+    .modal,
+    .dialog,
+    .modal-content,
+    .dialog-content {
+      width: calc(100vw - 32px) !important;
+      max-width: 100% !important;
+      margin: 16px auto !important;
+      border-radius: 12px !important;
+    }
+  
+    /* ── Cards: prevent overflow ── */
+    .card,
+    .goal-card,
+    .stat-card,
+    .checkin-card {
+      overflow: hidden;
+    }
+  
+    /* ── Prevent fixed-width elements from overflowing ── */
+    .container,
+    .wrapper,
+    .content {
+      max-width: 100% !important;
+      overflow-x: hidden !important;
+    }
   }
-
-  /* goal cards — stack */
-  .goal-card {
-    flex-direction: column !important;
+  
+  /* ============================================================
+     SMALL MOBILE BREAKPOINT (max-width: 480px)
+     ============================================================ */
+  @media (max-width: 480px) {
+  
+    /* ── Stats: still 2 columns ── */
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+  
+    /* ── Main: tighter padding ── */
+    .app-main {
+      padding: 10px !important;
+    }
+  
+    /* ── Sidebar narrower on very small screens ── */
+    .app-sidebar {
+      width: 180px !important;
+      left: -180px !important;
+    }
+  
+    /* ── Quarters: 1 column on very small ── */
+    .quarters-grid {
+      grid-template-columns: 1fr !important;
+    }
+  
+    /* ── Goal card right: stack vertically on very small ── */
+    .goal-card-right {
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      gap: 8px !important;
+    }
+  
+    /* ── Typography: tightest sizes ── */
+    h1 {
+      font-size: 1.3rem !important;
+    }
+  
+    h2 {
+      font-size: 15px !important;
+    }
+  
+    h3 {
+      font-size: 14px !important;
+    }
+  
+    body,
+    p,
+    li,
+    td,
+    th {
+      font-size: 13px;
+    }
+  
+    /* ── Chatbot: full viewport width ── */
+    .chatbot-window {
+      width: 100vw !important;
+      right: 0 !important;
+      left: 0 !important;
+      border-radius: 12px 12px 0 0 !important;
+    }
   }
-  .goal-card-right {
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    width: 100% !important;
+  
+  /* ============================================================
+     LANDSCAPE PHONE (rotated sideways)
+     ============================================================ */
+  @media (max-height: 500px) and (orientation: landscape) {
+  
+    /* Adjust sidebar top for smaller header in landscape */
+    .app-sidebar {
+      top: 44px !important;
+      height: calc(100vh - 44px) !important;
+    }
+  
+    /* Chatbot window: shorter in landscape */
+    .chatbot-window {
+      max-height: 80vh !important;
+    }
+  
+    /* Stats grid: 4 columns — more horizontal space available */
+    .stats-grid {
+      grid-template-columns: repeat(4, 1fr) !important;
+    }
+  
+    /* Forms: 2 columns in landscape (more space) */
+    .form-grid,
+    .shared-form-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+  
+    /* ── Typography: landscape phone heading sizes ── */
+    h2 {
+      font-size: 16px !important;
+    }
   }
-
-  /* check-in grid — stack */
-  .checkin-grid {
-    grid-template-columns: 1fr !important;
+  
+  /* ============================================================
+     PRINT STYLES (bonus)
+     ============================================================ */
+  @media print {
+    .hamburger-btn,
+    .app-sidebar,
+    .chatbot-window,
+    #sidebar-overlay {
+      display: none !important;
+    }
+  
+    .app-main {
+      padding: 0 !important;
+      max-height: none !important;
+    }
+  
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
   }
-
-  /* achievement quarters — 2 per row */
-  .quarters-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-
-  /* completion grid — 1 col */
-  .completion-grid {
-    grid-template-columns: 1fr !important;
-  }
-
-  /* chatbot window */
-  .chatbot-window {
-    width: calc(100vw - 32px) !important;
-    right: 16px !important;
-    left: 16px !important;
-  }
-
-  h2 { font-size: 17px !important; }
-}
-
-@media (max-width: 480px) {
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-  .app-main {
-    padding: 10px !important;
-  }
-}
