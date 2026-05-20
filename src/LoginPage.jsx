@@ -240,8 +240,8 @@ export default function LoginPage({ onLogin }) {
                   <label style={fieldLabelStyle}>Role</label>
                   <select value={role} onChange={e=>setRole(e.target.value)}
                     style={{ ...fieldInputStyle(false), appearance:"none" }}>
-                    <option>Employee</option>
-                    <option>Manager</option>
+                    <option value="employee">Employee</option>
+                    <option value="manager">Manager</option>
                   </select>
                 </div>
               </div>
