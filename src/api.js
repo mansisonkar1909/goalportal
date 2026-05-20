@@ -13,7 +13,7 @@ function headers() {
 
 //AUTH
 export async function loginAPI(email, password) {
-    const res = await fetch(`${BASE}/api/auth/login`, {
+    const res = await fetch(`${BASE}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -22,7 +22,7 @@ export async function loginAPI(email, password) {
   }
   
   export async function registerAPI({ name, email, password, role, dept }) {
-    const res = await fetch(`${BASE}/api/auth/register`, {
+    const res = await fetch(`${BASE}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, password, role, dept }),
