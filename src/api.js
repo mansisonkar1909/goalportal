@@ -11,20 +11,25 @@ function headers() {
   };
 }
 
-// AUTH
-export const loginAPI = (email, password) =>
-  fetch(`${BASE}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password })
-  }).then(r => r.json());
+//AUTH
+export async function loginAPI(email, password) {
+    const res = await fetch(`${BASE}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    return res.json();
+  }
+  
+  export async function registerAPI({ name, email, password, role, dept }) {
+    const res = await fetch(`${BASE}/api/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password, role, dept }),
+    });
+    return res.json();
+  }
 
-export const registerAPI = (data) =>
-  fetch(`${BASE}/auth/register`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
-  }).then(r => r.json());
 
 // GOALS
 export const fetchMyGoals   = () => fetch(`${BASE}/goals`,      { headers: headers() }).then(r => r.json());

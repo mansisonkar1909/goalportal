@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "./firebase";
-import { loginAPI } from "./api";
+import { loginAPI, registerAPI } from "./api"; // make sure registerAPI exists
 
 const DUMMY_USERS = [
   { name:"Aarav Sharma",  email:"aarav@corp.in",  role:"Employee", dept:"Sales",       password:"Aarav@123",  avatar:"AS" },
@@ -14,7 +14,6 @@ const DUMMY_USERS = [
 ];
 
 const roleColor = { Employee:"#6366f1", Manager:"#0ea5e9", Admin:"#16a34a" };
-
 const fieldLabelStyle = { display:"block", fontSize:12, fontWeight:600, color:"#6366f1", marginBottom:6 };
 const fieldInputStyle = (hasError) => ({
   width:"100%", padding:"10px 14px", borderRadius:9, boxSizing:"border-box",
@@ -24,13 +23,27 @@ const fieldInputStyle = (hasError) => ({
 });
 
 export default function LoginPage({ onLogin }) {
+  const [mode, setMode]         = useState("login"); // "login" | "register"
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName]         = useState("");
+  const [dept, setDept]         = useState("Engineering");
+  const [role, setRole]         = useState("Employee");
   const [error, setError]       = useState("");
+  const [success, setSuccess]   = useState("");
   const [copied, setCopied]     = useState(null);
+  const [loading, setLoading]   = useState(false);
 
-  async function handleDummyLogin(e) {
+  function resetForm() {
+    setEmail(""); setPassword(""); setName("");
+    setError(""); setSuccess("");
+  }
+
+  function switchMode(m) { setMode(m); resetForm(); }
+
+  async function handleLogin(e) {
     e.preventDefault();
+    setLoading(true);
     try {
       const data = await loginAPI(email, password);
       if (data.token) {
@@ -40,12 +53,34 @@ export default function LoginPage({ onLogin }) {
       } else {
         setError(data.message || "Invalid email or password");
       }
-    } catch (err) {
+    } catch {
       setError("Server error. Make sure backend is running.");
     }
+    setLoading(false);
+  }
+
+  async function handleRegister(e) {
+    e.preventDefault();
+    if (!name.trim()) return setError("Full name is required.");
+    if (password.length < 6) return setError("Password must be at least 6 characters.");
+    setLoading(true);
+    try {
+      const data = await registerAPI({ name, email, password, role, dept });
+      if (data.token) {
+        localStorage.setItem("goalquest_token", data.token);
+        localStorage.setItem("goalquest_user", JSON.stringify(data));
+        onLogin(data);
+      } else {
+        setError(data.message || "Registration failed.");
+      }
+    } catch {
+      setError("Server error. Make sure backend is running.");
+    }
+    setLoading(false);
   }
 
   async function handleGoogle() {
+    setLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const u = result.user;
@@ -54,12 +89,23 @@ export default function LoginPage({ onLogin }) {
         name:   u.displayName,
         email:  u.email,
         role:   match ? match.role.toLowerCase() : "employee",
+        dept:   match ? match.dept : "General",
         avatar: u.displayName?.split(" ").map(n=>n[0]).join("").slice(0,2) ?? "U",
         photo:  u.photoURL,
       });
-    } catch {
-      setError("Google sign-in failed. Try dummy login below.");
+    } catch (err) {
+      // Detailed error for debugging
+      if (err.code === "auth/unauthorized-domain") {
+        setError("Domain not authorized. Add this domain in Firebase Console → Auth → Authorized Domains.");
+      } else if (err.code === "auth/popup-blocked") {
+        setError("Popup was blocked by browser. Allow popups for this site.");
+      } else if (err.code === "auth/popup-closed-by-user") {
+        setError("Sign-in popup was closed. Please try again.");
+      } else {
+        setError(`Google sign-in failed: ${err.message}`);
+      }
     }
+    setLoading(false);
   }
 
   function copyToClipboard(text, id) {
@@ -68,11 +114,14 @@ export default function LoginPage({ onLogin }) {
     setTimeout(() => setCopied(null), 1500);
   }
 
-  function quickFill(user) {
-    setEmail(user.email);
-    setPassword(user.password);
+  function quickFill(u) {
+    setEmail(u.email);
+    setPassword(u.password);
     setError("");
+    setMode("login");
   }
+
+  const isLogin = mode === "login";
 
   return (
     <div style={{
@@ -82,16 +131,17 @@ export default function LoginPage({ onLogin }) {
     }}>
       <div style={{ width:"100%", maxWidth:980, display:"flex", gap:32, alignItems:"flex-start" }}>
 
+        {/* ── Left Card ── */}
         <div style={{
-          flex:"0 0 380px", background:"#fff", borderRadius:16,
+          flex:"0 0 400px", background:"#fff", borderRadius:16,
           border:"1px solid #e2e8f0", padding:36, boxShadow:"0 4px 24px #0000000a"
         }}>
+          {/* Logo */}
           <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:28 }}>
             <div style={{
               width:44, height:44, borderRadius:12,
               background:"linear-gradient(135deg,#6366f1,#8b5cf6)",
-              display:"flex", alignItems:"center", justifyContent:"center",
-              fontSize:22
+              display:"flex", alignItems:"center", justifyContent:"center", fontSize:22
             }}>🎯</div>
             <div>
               <div style={{ fontSize:18, fontWeight:700, color:"#1e293b" }}>GoalQuest</div>
@@ -99,18 +149,37 @@ export default function LoginPage({ onLogin }) {
             </div>
           </div>
 
-          <h2 style={{ margin:"0 0 6px", fontSize:22, fontWeight:700, color:"#1e293b" }}>Welcome back</h2>
-          <p style={{ margin:"0 0 24px", fontSize:14, color:"#64748b" }}>Sign in to access your goal sheet</p>
+          {/* Mode Toggle */}
+          <div style={{
+            display:"flex", background:"#f1f5f9", borderRadius:10,
+            padding:4, marginBottom:24, gap:4
+          }}>
+            {["login","register"].map(m => (
+              <button key={m} onClick={() => switchMode(m)} style={{
+                flex:1, padding:"9px 0", borderRadius:8, border:"none",
+                fontWeight:600, fontSize:14, cursor:"pointer", transition:"all .15s",
+                background: mode===m ? "#6366f1" : "transparent",
+                color: mode===m ? "#fff" : "#64748b",
+              }}>
+                {m === "login" ? "Sign In" : "Register"}
+              </button>
+            ))}
+          </div>
 
-          <button type="button" onClick={handleGoogle} style={{
+          <h2 style={{ margin:"0 0 4px", fontSize:20, fontWeight:700, color:"#1e293b" }}>
+            {isLogin ? "Welcome back" : "Create account"}
+          </h2>
+          <p style={{ margin:"0 0 20px", fontSize:13, color:"#64748b" }}>
+            {isLogin ? "Sign in to access your goal sheet" : "Register to join your team"}
+          </p>
+
+          {/* Google Button */}
+          <button type="button" onClick={handleGoogle} disabled={loading} style={{
             width:"100%", display:"flex", alignItems:"center", justifyContent:"center",
             gap:10, padding:"11px 0", borderRadius:10, border:"1px solid #e2e8f0",
             background:"#fff", fontSize:14, fontWeight:600, color:"#1e293b",
-            cursor:"pointer", marginBottom:20, transition:"background .15s"
-          }}
-            onMouseEnter={e=>e.currentTarget.style.background="#f8fafc"}
-            onMouseLeave={e=>e.currentTarget.style.background="#fff"}
-          >
+            cursor:"pointer", marginBottom:20, opacity: loading ? .6 : 1
+          }}>
             <svg width="18" height="18" viewBox="0 0 48 48">
               <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
               <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
@@ -126,7 +195,18 @@ export default function LoginPage({ onLogin }) {
             <div style={{ flex:1, height:1, background:"#e2e8f0" }}/>
           </div>
 
-          <form onSubmit={handleDummyLogin}>
+          {/* Form */}
+          <form onSubmit={isLogin ? handleLogin : handleRegister}>
+            {!isLogin && (
+              <div style={{ marginBottom:14 }}>
+                <label style={fieldLabelStyle}>Full Name</label>
+                <input value={name} onChange={e=>{setName(e.target.value);setError("");}}
+                  placeholder="e.g. Aarav Sharma"
+                  style={fieldInputStyle(!!error)}
+                />
+              </div>
+            )}
+
             <div style={{ marginBottom:14 }}>
               <label style={fieldLabelStyle}>Email address</label>
               <input type="email" value={email} onChange={e=>{setEmail(e.target.value);setError("");}}
@@ -134,112 +214,132 @@ export default function LoginPage({ onLogin }) {
                 style={fieldInputStyle(!!error)}
               />
             </div>
-            <div style={{ marginBottom:20 }}>
+
+            <div style={{ marginBottom: !isLogin ? 14 : 20 }}>
               <label style={fieldLabelStyle}>Password</label>
               <input type="password" value={password} onChange={e=>{setPassword(e.target.value);setError("");}}
-                placeholder="e.g. Aarav@123"
+                placeholder={isLogin ? "e.g. Aarav@123" : "Min. 6 characters"}
                 style={fieldInputStyle(!!error)}
               />
             </div>
+
+            {!isLogin && (
+              <div style={{ display:"flex", gap:12, marginBottom:20 }}>
+                <div style={{ flex:1 }}>
+                  <label style={fieldLabelStyle}>Department</label>
+                  <select value={dept} onChange={e=>setDept(e.target.value)}
+                    style={{ ...fieldInputStyle(false), appearance:"none" }}>
+                    <option>Engineering</option>
+                    <option>Sales</option>
+                    <option>HR</option>
+                    <option>Marketing</option>
+                    <option>Finance</option>
+                  </select>
+                </div>
+                <div style={{ flex:1 }}>
+                  <label style={fieldLabelStyle}>Role</label>
+                  <select value={role} onChange={e=>setRole(e.target.value)}
+                    style={{ ...fieldInputStyle(false), appearance:"none" }}>
+                    <option>Employee</option>
+                    <option>Manager</option>
+                  </select>
+                </div>
+              </div>
+            )}
 
             {error && (
               <div style={{
                 background:"#fef2f2", border:"1px solid #fecaca", borderRadius:8,
                 padding:"10px 14px", fontSize:13, color:"#dc2626", marginBottom:16
-              }}>
-                {error}
-              </div>
+              }}>{error}</div>
+            )}
+            {success && (
+              <div style={{
+                background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:8,
+                padding:"10px 14px", fontSize:13, color:"#16a34a", marginBottom:16
+              }}>{success}</div>
             )}
 
-            <button type="submit" style={{
-              width:"100%", background:"#6366f1", color:"#fff", border:"none",
-              borderRadius:10, padding:"12px 0", fontSize:15, fontWeight:700,
-              cursor:"pointer"
+            <button type="submit" disabled={loading} style={{
+              width:"100%", background: loading ? "#a5b4fc" : "#6366f1",
+              color:"#fff", border:"none", borderRadius:10,
+              padding:"12px 0", fontSize:15, fontWeight:700, cursor: loading ? "not-allowed" : "pointer"
             }}>
-              Sign In →
+              {loading ? "Please wait..." : isLogin ? "Sign In →" : "Create Account →"}
             </button>
           </form>
+
+          <p style={{ textAlign:"center", marginTop:16, fontSize:13, color:"#64748b" }}>
+            {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
+            <span onClick={() => switchMode(isLogin ? "register" : "login")}
+              style={{ color:"#6366f1", fontWeight:600, cursor:"pointer" }}>
+              {isLogin ? "Register" : "Sign In"}
+            </span>
+          </p>
         </div>
 
-        <div style={{ flex:1 }}>
-          <div style={{ marginBottom:16 }}>
-            <div style={{ fontSize:16, fontWeight:700, color:"#1e293b" }}>Demo credentials</div>
-            <div style={{ fontSize:13, color:"#64748b", marginTop:2 }}>
-              Click any card to auto-fill, or copy individual fields
+        {/* ── Right: Demo Cards (only on login mode) ── */}
+        {isLogin && (
+          <div style={{ flex:1 }}>
+            <div style={{ marginBottom:16 }}>
+              <div style={{ fontSize:16, fontWeight:700, color:"#1e293b" }}>Demo credentials</div>
+              <div style={{ fontSize:13, color:"#64748b", marginTop:2 }}>
+                Click any card to auto-fill, or copy individual fields
+              </div>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+              {DUMMY_USERS.map((u, i) => (
+                <div key={i} onClick={() => quickFill(u)}
+                  style={{
+                    background:"#fff", borderRadius:12, border:"1px solid #e2e8f0",
+                    padding:16, cursor:"pointer", transition:"box-shadow .15s, border-color .15s"
+                  }}
+                  onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 4px 16px #0000000f"; e.currentTarget.style.borderColor="#c7d2fe";}}
+                  onMouseLeave={e=>{e.currentTarget.style.boxShadow="none"; e.currentTarget.style.borderColor="#e2e8f0";}}
+                >
+                  <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+                    <div style={{
+                      width:36, height:36, borderRadius:"50%",
+                      background: roleColor[u.role]+"22", color: roleColor[u.role],
+                      display:"flex", alignItems:"center", justifyContent:"center",
+                      fontSize:13, fontWeight:700, flexShrink:0
+                    }}>{u.avatar}</div>
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:700, color:"#1e293b" }}>{u.name}</div>
+                      <div style={{ fontSize:11, color:"#94a3b8" }}>{u.dept}</div>
+                    </div>
+                    <span style={{
+                      marginLeft:"auto", fontSize:10, fontWeight:700, padding:"2px 8px",
+                      borderRadius:99, background: roleColor[u.role]+"18",
+                      color: roleColor[u.role], letterSpacing:.3
+                    }}>{u.role.toUpperCase()}</span>
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
+                    <div>
+                      <div style={{ fontSize:10, color:"#94a3b8", marginBottom:1 }}>EMAIL</div>
+                      <div style={{ fontSize:12, color:"#475569", fontFamily:"monospace" }}>{u.email}</div>
+                    </div>
+                    <button type="button" onClick={e=>{ e.stopPropagation(); copyToClipboard(u.email, u.email); }}
+                      style={{ background: copied===u.email?"#dcfce7":"#f1f5f9", color: copied===u.email?"#16a34a":"#64748b", border:"none", borderRadius:6, padding:"4px 8px", fontSize:11, cursor:"pointer", fontWeight:600 }}>
+                      {copied===u.email ? "✓ Copied" : "Copy"}
+                    </button>
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                    <div>
+                      <div style={{ fontSize:10, color:"#94a3b8", marginBottom:1 }}>PASSWORD</div>
+                      <div style={{ fontSize:12, color:"#475569", fontFamily:"monospace" }}>{u.password}</div>
+                    </div>
+                    <button type="button" onClick={e=>{ e.stopPropagation(); copyToClipboard(u.password, u.password); }}
+                      style={{ background: copied===u.password?"#dcfce7":"#f1f5f9", color: copied===u.password?"#16a34a":"#64748b", border:"none", borderRadius:6, padding:"4px 8px", fontSize:11, cursor:"pointer", fontWeight:600 }}>
+                      {copied===u.password ? "✓ Copied" : "Copy"}
+                    </button>
+                  </div>
+                  <div style={{ fontSize:10, color:"#c7d2fe", marginTop:8, textAlign:"center" }}>click card to auto-fill →</div>
+                </div>
+              ))}
             </div>
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-            {DUMMY_USERS.map((u, i) => (
-              <div key={i}
-                onClick={() => quickFill(u)}
-                style={{
-                  background:"#fff", borderRadius:12, border:"1px solid #e2e8f0",
-                  padding:16, cursor:"pointer", transition:"box-shadow .15s, border-color .15s",
-                  position:"relative"
-                }}
-                onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 4px 16px #0000000f"; e.currentTarget.style.borderColor="#c7d2fe";}}
-                onMouseLeave={e=>{e.currentTarget.style.boxShadow="none"; e.currentTarget.style.borderColor="#e2e8f0";}}
-              >
-                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
-                  <div style={{
-                    width:36, height:36, borderRadius:"50%",
-                    background: roleColor[u.role]+"22",
-                    color: roleColor[u.role],
-                    display:"flex", alignItems:"center", justifyContent:"center",
-                    fontSize:13, fontWeight:700, flexShrink:0
-                  }}>{u.avatar}</div>
-                  <div>
-                    <div style={{ fontSize:13, fontWeight:700, color:"#1e293b" }}>{u.name}</div>
-                    <div style={{ fontSize:11, color:"#94a3b8" }}>{u.dept}</div>
-                  </div>
-                  <span style={{
-                    marginLeft:"auto", fontSize:10, fontWeight:700, padding:"2px 8px",
-                    borderRadius:99, background: roleColor[u.role]+"18",
-                    color: roleColor[u.role], letterSpacing:.3
-                  }}>{u.role.toUpperCase()}</span>
-                </div>
-
-                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
-                  <div>
-                    <div style={{ fontSize:10, color:"#94a3b8", marginBottom:1 }}>EMAIL</div>
-                    <div style={{ fontSize:12, color:"#475569", fontFamily:"monospace" }}>{u.email}</div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={e=>{ e.stopPropagation(); copyToClipboard(u.email, u.email); }}
-                    style={{
-                      background: copied===u.email ? "#dcfce7" : "#f1f5f9",
-                      color: copied===u.email ? "#16a34a" : "#64748b",
-                      border:"none", borderRadius:6, padding:"4px 8px",
-                      fontSize:11, cursor:"pointer", fontWeight:600
-                    }}
-                  >{copied===u.email ? "✓ Copied" : "Copy"}</button>
-                </div>
-
-                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                  <div>
-                    <div style={{ fontSize:10, color:"#94a3b8", marginBottom:1 }}>PASSWORD</div>
-                    <div style={{ fontSize:12, color:"#475569", fontFamily:"monospace" }}>{u.password}</div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={e=>{ e.stopPropagation(); copyToClipboard(u.password, u.password); }}
-                    style={{
-                      background: copied===u.password ? "#dcfce7" : "#f1f5f9",
-                      color: copied===u.password ? "#16a34a" : "#64748b",
-                      border:"none", borderRadius:6, padding:"4px 8px",
-                      fontSize:11, cursor:"pointer", fontWeight:600
-                    }}
-                  >{copied===u.password ? "✓ Copied" : "Copy"}</button>
-                </div>
-
-                <div style={{ fontSize:10, color:"#c7d2fe", marginTop:8, textAlign:"center" }}>
-                  click card to auto-fill →
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        )}
 
       </div>
     </div>
